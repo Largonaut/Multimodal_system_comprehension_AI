@@ -49,6 +49,14 @@ class GremlinEngine:
         self.concept_dict = ConceptDictionary()
         self.grammar = GrammarEngine()
 
+        # Create translator for freeform messages
+        from translation.gemma_translator import GemmaTranslator
+        self.translator = GemmaTranslator(
+            self.pack,
+            self.concept_dict,
+            use_ai=False  # Dictionary mode
+        )
+
         self.messages: List[Message] = []
         self.packet_count = 0
         self.attack_count = 0

@@ -232,7 +232,7 @@ class GremlinAdminGUI:
         ).pack(pady=5)
 
         buttons_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
-        buttons_frame.pack(pady=10)
+        buttons_frame.pack(pady=5)
 
         # Buttons
         ttk.Button(
@@ -263,6 +263,34 @@ class GremlinAdminGUI:
             buttons_frame,
             text="❌ Quit",
             command=self.root.quit
+        ).pack(side=tk.LEFT, padx=5)
+
+        # Chat mode
+        chat_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
+        chat_frame.pack(pady=10, padx=10, fill=tk.X)
+
+        tk.Label(
+            chat_frame,
+            text="💬 CHAT MODE:",
+            font=('Courier', 10, 'bold'),
+            bg=self.colors['panel'],
+            fg='#00ff00'
+        ).pack(side=tk.LEFT, padx=5)
+
+        self.chat_entry = tk.Entry(
+            chat_frame,
+            font=('Courier', 10),
+            bg='#333333',
+            fg='white',
+            insertbackground='white'
+        )
+        self.chat_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        self.chat_entry.bind('<Return>', lambda e: self.send_chat_message())
+
+        ttk.Button(
+            chat_frame,
+            text="Send Message",
+            command=self.send_chat_message
         ).pack(side=tk.LEFT, padx=5)
 
     def send_auth(self):
@@ -323,6 +351,47 @@ class GremlinAdminGUI:
         for _ in range(5):
             self.send_auth()
             self.root.update()
+
+    def send_chat_message(self):
+        """Send custom chat message."""
+        message = self.chat_entry.get().strip()
+        if not message:
+            return
+
+        # Translate message to synthetic
+        synthetic = self.engine.translator.translate_to_synthetic(message)
+
+        # Create fake message object
+        from engine import Message
+        from datetime import datetime
+
+        msg = Message(
+            timestamp=datetime.now().strftime("%H:%M:%S"),
+            direction='client->server',
+            english=message,
+            synthetic=synthetic,
+            sender='client'
+        )
+
+        self.handle_new_message(msg)
+
+        # Generate server response (echo back)
+        response_msg = Message(
+            timestamp=datetime.now().strftime("%H:%M:%S"),
+            direction='server->client',
+            english=f"Received: {message}",
+            synthetic=self.engine.translator.translate_to_synthetic(f"Received: {message}"),
+            sender='server'
+        )
+
+        self.handle_new_message(response_msg)
+
+        # Clear entry
+        self.chat_entry.delete(0, tk.END)
+
+        # Update stats
+        self.engine.packet_count += 2
+        self.update_stats()
 
     def handle_new_message(self, message):
         """Handle new message from engine."""
