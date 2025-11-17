@@ -1,0 +1,20 @@
+# GREMLIN Dependencies
+
+# Core ML frameworks
+torch>=2.0.0
+transformers>=4.35.0
+
+# Gemma models
+# Note: User has EmbeddingGemma 300M and Gemma 2 9B locally
+
+# Vector operations
+numpy>=1.24.0
+faiss-cpu>=1.7.4  # For efficient vector similarity search
+
+# Data handling
+pydantic>=2.0.0  # For robust data validation
+cryptography>=41.0.0  # For language pack encryption
+
+# Utilities
+tqdm>=4.65.0  # Progress bars
+rich>=13.0.0  # Beautiful terminal output

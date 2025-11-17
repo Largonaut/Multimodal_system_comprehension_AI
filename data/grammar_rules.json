@@ -1,0 +1,99 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "description": "Grammar rule templates from world languages"
+  },
+  "word_orders": {
+    "SVO": {
+      "name": "Subject-Verb-Object",
+      "description": "English, French, Spanish, Chinese",
+      "pattern": ["subject", "verb", "object"],
+      "example": "I eat apple"
+    },
+    "SOV": {
+      "name": "Subject-Object-Verb",
+      "description": "Japanese, Korean, Turkish, Hindi",
+      "pattern": ["subject", "object", "verb"],
+      "example": "I apple eat"
+    },
+    "VSO": {
+      "name": "Verb-Subject-Object",
+      "description": "Welsh, Irish, Arabic (classical)",
+      "pattern": ["verb", "subject", "object"],
+      "example": "Eat I apple"
+    },
+    "VOS": {
+      "name": "Verb-Object-Subject",
+      "description": "Malagasy, Fijian",
+      "pattern": ["verb", "object", "subject"],
+      "example": "Eat apple I"
+    },
+    "OVS": {
+      "name": "Object-Verb-Subject",
+      "description": "Rare: some Amazonian languages",
+      "pattern": ["object", "verb", "subject"],
+      "example": "Apple eat I"
+    },
+    "OSV": {
+      "name": "Object-Subject-Verb",
+      "description": "Rare: some sign languages",
+      "pattern": ["object", "subject", "verb"],
+      "example": "Apple I eat"
+    }
+  },
+  "article_usage": {
+    "definite": {
+      "before_noun": ["English", "French", "Arabic"],
+      "after_noun": ["Romanian", "Swedish"],
+      "none": ["Russian", "Latin", "Japanese"]
+    },
+    "indefinite": {
+      "before_noun": ["English", "German"],
+      "none": ["Russian", "Japanese", "Chinese"]
+    }
+  },
+  "preposition_usage": {
+    "prepositions": {
+      "description": "Words before noun phrases",
+      "languages": ["English", "French", "Spanish"]
+    },
+    "postpositions": {
+      "description": "Words after noun phrases",
+      "languages": ["Japanese", "Korean", "Turkish"]
+    }
+  },
+  "adjective_position": {
+    "before_noun": ["English", "German"],
+    "after_noun": ["French", "Spanish", "Arabic"],
+    "both": ["Greek", "Portuguese"]
+  },
+  "sentence_templates": {
+    "authentication_client": {
+      "english": "Checking in, this is {name} with {company} talking about {topic}",
+      "components": [
+        {"type": "action", "concept": "checking_in"},
+        {"type": "punctuation", "value": ","},
+        {"type": "identity", "concept": "this_is"},
+        {"type": "variable", "concept": "name"},
+        {"type": "connector", "concept": "with"},
+        {"type": "variable", "concept": "company"},
+        {"type": "connector", "concept": "talking_about"},
+        {"type": "variable", "concept": "topic"}
+      ]
+    },
+    "authentication_server": {
+      "english": "Information received, confirmed you are {name} with {company} talking about {topic}",
+      "components": [
+        {"type": "action", "concept": "information_received"},
+        {"type": "punctuation", "value": ","},
+        {"type": "action", "concept": "confirmed"},
+        {"type": "identity", "concept": "you_are"},
+        {"type": "variable", "concept": "name"},
+        {"type": "connector", "concept": "with"},
+        {"type": "variable", "concept": "company"},
+        {"type": "connector", "concept": "talking_about"},
+        {"type": "variable", "concept": "topic"}
+      ]
+    }
+  }
+}
