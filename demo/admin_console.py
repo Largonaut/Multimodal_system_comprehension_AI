@@ -127,7 +127,9 @@ class MessageLog(ScrollableContainer):
 
     def add_message(self, timestamp: str, text: str, style: str = "white"):
         """Add a message to the log."""
-        self.log_widget.write(f"[{timestamp}] {text}", style=style)
+        from rich.text import Text
+        msg = Text(f"[{timestamp}] {text}", style=style)
+        self.log_widget.write(msg)
 
 
 class AdminConsole(App):
