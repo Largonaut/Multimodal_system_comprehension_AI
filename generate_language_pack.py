@@ -78,7 +78,8 @@ def generate_pack(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    filename = f"language_pack_{timestamp}.json"
+    # Include metadata in filename for easy identification
+    filename = f"language_pack_{words_per_concept}w_{word_order}_{timestamp}.json"
     output_path = output_dir / filename
 
     pack.save(output_path)
