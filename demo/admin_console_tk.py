@@ -275,14 +275,48 @@ class GremlinAdminGUI:
         self.log_mitm(f"\n⚠️ [ATTACK ATTEMPT] ⚠️\n{gibberish}\n⚠️ Cannot decrypt without language pack!\n", 'red')
 
     def rotate_language(self):
-        """Rotate language pack (visual change)."""
+        """ACTUALLY rotate to a new language pack."""
+        # Show progress
+        self.log_mitm("\n🔄 Generating new language pack...\n", 'cyan')
+        self.root.update()
+
+        # Generate new pack
+        from pathlib import Path
+        import tempfile
+        temp_dir = Path(tempfile.gettempdir()) / 'gremlin_temp'
+        temp_dir.mkdir(exist_ok=True)
+
+        new_pack_path = self.engine.generate_new_pack(
+            words_per_concept=500,  # Smaller for speed
+            output_path=temp_dir / f"temp_pack_{random.randint(1000, 9999)}.json"
+        )
+
+        self.log_mitm(f"✅ Generated: {new_pack_path.name}\n", 'green')
+        self.root.update()
+
+        # Load new pack
+        self.log_mitm("🔄 Loading new pack...\n", 'cyan')
+        self.root.update()
+
+        self.engine.rotate_language(new_pack_path)
+
+        # Clear all logs
+        self.client_log.delete('1.0', tk.END)
+        self.mitm_log.delete('1.0', tk.END)
+        self.server_log.delete('1.0', tk.END)
+
+        # Change visual colors
         colors = ['🟩', '🟦', '🟪', '🟨', '🟧']
         new_color = random.choice(colors)
 
         self.client_visual.config(text=f"  ┌──────┐\n  │ ◖◗   │\n  │ {new_color}   │\n  └──────┘")
         self.server_visual.config(text=f"  ┌──────┐\n  │   ◖◗ │\n  │   {new_color} │\n  └──────┘")
 
-        self.log_mitm("\n🔄 Language rotated! New pack loaded.\n", 'cyan')
+        self.log_mitm("\n✅ NEW LANGUAGE LOADED!\n", 'green')
+        self.log_mitm("Old messages now worthless. Perfect forward secrecy!\n\n", 'cyan')
+
+        # Update stats
+        self.update_stats()
 
     def auto_send(self):
         """Send 5 auth messages automatically."""
