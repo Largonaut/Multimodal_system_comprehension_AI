@@ -2,7 +2,28 @@
 
 This standalone module generates GREMLIN synthetic language packs.
 
-## Quick Start (Windows)
+## 🎨 GUI Version (Recommended!)
+
+**The easiest way to generate language packs:**
+
+1. Double-click **`run_generator.bat`**
+2. Or run: `python language_pack_generator_gui.py`
+
+### GUI Features:
+- 🎚️ **Words per Concept Slider** (100-50,000) with presets
+- 📏 **Word Length Control** (min/max character range)
+- 🌍 **Grammar Selection** (6 world language patterns: SVO, SOV, VSO, VOS, OVS, OSV)
+- 🔤 **Unicode Block Selection** (22 writing systems + symbols)
+  - Latin, Cyrillic, Greek, Arabic, Hebrew
+  - Devanagari, Bengali, Thai, Ethiopic, Cherokee
+  - Hiragana, Katakana, CJK, Hangul
+  - Mathematical symbols, Arrows, Geometric shapes, Emoji
+- 📁 **Output Directory Picker**
+- 🏷️ **Optional Language Name** (included in filename)
+- 📊 **Real-time Progress** with status log
+- 📈 **File Size Estimation**
+
+## Quick Start (Command Line)
 
 ### Option 1: Double-Click (Easiest)
 1. Double-click `generate_massive_pack.bat`
