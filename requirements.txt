@@ -5,6 +5,7 @@ numpy>=1.24.0
 
 # Terminal UI (required for demos)
 rich>=13.0.0
+textual>=1.0.0  # For admin console
 
 # AI/ML (optional - for Gemma integration)
 # Uncomment if using Gemma models:
