@@ -472,7 +472,14 @@ class GremlinAdminGUI:
             return
 
         # Translate message to synthetic
-        synthetic = self.engine.translator.translate_to_synthetic(message)
+        try:
+            synthetic = self.engine.translator.translate_to_synthetic(message)
+            print(f"\n[DEBUG] Translation:")
+            print(f"  English:   {message}")
+            print(f"  Synthetic: {synthetic[:100]}..." if len(synthetic) > 100 else f"  Synthetic: {synthetic}")
+        except Exception as e:
+            print(f"\n[ERROR] Translation failed: {e}")
+            synthetic = "[TRANSLATION ERROR]"
 
         # Create message
         from engine import Message
@@ -505,7 +512,14 @@ class GremlinAdminGUI:
             return
 
         # Translate message to synthetic
-        synthetic = self.engine.translator.translate_to_synthetic(message)
+        try:
+            synthetic = self.engine.translator.translate_to_synthetic(message)
+            print(f"\n[DEBUG] Translation:")
+            print(f"  English:   {message}")
+            print(f"  Synthetic: {synthetic[:100]}..." if len(synthetic) > 100 else f"  Synthetic: {synthetic}")
+        except Exception as e:
+            print(f"\n[ERROR] Translation failed: {e}")
+            synthetic = "[TRANSLATION ERROR]"
 
         # Create message
         from engine import Message
@@ -741,14 +755,30 @@ class GremlinAdminGUI:
             new_scale = scale_var.get()
             self.ui_scale = new_scale
 
-            # Apply tkinter scaling
-            self.root.tk.call('tk', 'scaling', new_scale * 75)
+            # Apply window scaling
+            base_width = 1400
+            base_height = 900
+            new_width = int(base_width * new_scale)
+            new_height = int(base_height * new_scale)
+
+            self.root.geometry(f"{new_width}x{new_height}")
+
+            # Apply font scaling to major elements
+            try:
+                # Scale log fonts
+                for widget in [self.client_log, self.server_log, self.mitm_log]:
+                    current_font = widget.cget('font')
+                    if isinstance(current_font, tuple):
+                        widget.configure(font=(current_font[0], int(9 * new_scale)))
+                    else:
+                        widget.configure(font=('Courier', int(9 * new_scale)))
+            except:
+                pass  # If font scaling fails, just continue
 
             messagebox.showinfo(
                 "Scale Applied",
                 f"UI scale set to {new_scale:.1f}x\n\n"
-                "Note: Some elements may require restarting\n"
-                "the application for full effect."
+                "Window resized to {new_width}x{new_height}"
             )
             dialog.destroy()
 
@@ -814,8 +844,38 @@ def main():
 
             pack_path = Path(pack_path)
 
-        # Initialize engine
+        # Initialize engine with progress indicators
+        print("\n📦 Loading language pack...")
+        print(f"   File: {pack_path.name}")
+        print(f"   Size: {pack_path.stat().st_size / (1024*1024):.1f} MB")
+        print()
+
+        import time
+        start_time = time.time()
+
+        # Show spinner during load
+        import threading
+        loading = True
+        def spinner():
+            chars = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+            i = 0
+            while loading:
+                print(f'\r   {chars[i % len(chars)]} Loading...', end='', flush=True)
+                time.sleep(0.1)
+                i += 1
+            print('\r   ✓ Loaded!     ')
+
+        spinner_thread = threading.Thread(target=spinner, daemon=True)
+        spinner_thread.start()
+
         engine = GremlinEngine(pack_path, mode=args.mode)
+
+        loading = False
+        spinner_thread.join(timeout=0.5)
+
+        elapsed = time.time() - start_time
+        print(f"   Time: {elapsed:.1f}s")
+        print()
 
         # Run GUI
         app = GremlinAdminGUI(engine)
