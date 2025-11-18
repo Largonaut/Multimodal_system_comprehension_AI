@@ -215,10 +215,18 @@ class LanguagePackViewer:
                     definition = concept_id.replace('_', ' ')
                     lemmas = [concept_id]
 
+                # Parse word pool - convert from {word: status} dict to separate lists
+                words_dict = pool_data.get('words', {})
+                pool_lists = {
+                    'unused': [word for word, status in words_dict.items() if status == 'unused'],
+                    'used': [word for word, status in words_dict.items() if status == 'used'],
+                    'use_last': [word for word, status in words_dict.items() if status == 'use_last']
+                }
+
                 self.concepts_data[concept_id] = {
                     'definition': definition,
                     'lemmas': lemmas,
-                    'pool': pool_data
+                    'pool': pool_lists
                 }
 
             # Update UI
@@ -250,13 +258,23 @@ class LanguagePackViewer:
             return
 
         # Display pack stats
+        total_unused = sum(len(c['pool']['unused']) for c in self.concepts_data.values())
+        total_used = sum(len(c['pool']['used']) for c in self.concepts_data.values())
+        total_use_last = sum(len(c['pool']['use_last']) for c in self.concepts_data.values())
+
+        grammar_data = self.pack.get('grammar', {})
+        if isinstance(grammar_data, dict):
+            grammar = grammar_data.get('word_order', 'Unknown')
+        else:
+            grammar = 'Unknown'
+
         stats = {
             'Language ID': self.pack.get('language_id', 'Unknown')[:16] + '...',
-            'Grammar': self.pack.get('grammar_rules', {}).get('word_order', 'Unknown'),
+            'Grammar': grammar,
             'Total Concepts': f"{len(self.concepts_data):,}",
-            'Total Words': f"{sum(len(c['pool']['unused']) + len(c['pool']['used']) + len(c['pool']['use_last']) for c in self.concepts_data.values()):,}",
-            'Unused Words': f"{sum(len(c['pool']['unused']) for c in self.concepts_data.values()):,}",
-            'Used Words': f"{sum(len(c['pool']['used']) for c in self.concepts_data.values()):,}",
+            'Total Words': f"{total_unused + total_used + total_use_last:,}",
+            'Unused Words': f"{total_unused:,}",
+            'Used Words': f"{total_used:,}",
         }
 
         for key, value in stats.items():
