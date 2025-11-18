@@ -345,7 +345,7 @@ class GremlinAdminGUI:
         # CLIENT log
         client_log_frame = tk.LabelFrame(
             logs_frame,
-            text="CLIENT OUTPUT",
+            text="CLIENT TERMINAL",
             bg=self.colors['panel'],
             fg=self.colors['client'],
             font=('Courier', 10, 'bold')
@@ -385,7 +385,7 @@ class GremlinAdminGUI:
         # SERVER log
         server_log_frame = tk.LabelFrame(
             logs_frame,
-            text="SERVER OUTPUT",
+            text="SERVER TERMINAL",
             bg=self.colors['panel'],
             fg=self.colors['server'],
             font=('Courier', 10, 'bold')
@@ -588,17 +588,29 @@ class GremlinAdminGUI:
     def handle_new_message(self, message):
         """Handle new message from engine."""
         if message.sender == "client":
-            # Client log
-            self.log_client(f"[{message.timestamp}] [EN] {message.english}\n", 'green')
-            self.log_client(f"[{message.timestamp}] [SYN] {message.synthetic}\n\n", 'yellow')
+            # Client terminal - shows what client SENDS
+            self.log_client(f"[{message.timestamp}] CLIENT SENT:\n", 'green')
+            self.log_client(f"  [EN]  {message.english}\n", 'white')
+            self.log_client(f"  [SYN] {message.synthetic}\n\n", 'yellow')
+
+            # Server terminal - shows what server RECEIVES (with translation)
+            self.log_server(f"[{message.timestamp}] SERVER RECEIVED:\n", 'cyan')
+            self.log_server(f"  [SYN] {message.synthetic}\n", 'yellow')
+            self.log_server(f"  [EN]  {message.english} (translated)\n\n", 'white')
 
             # MITM sees gibberish
             self.log_mitm(f"[{message.timestamp}] [INTERCEPTED]\n{message.synthetic}\n\n", 'red')
 
         else:  # server
-            # Server log
-            self.log_server(f"[{message.timestamp}] [SYN] {message.synthetic}\n", 'yellow')
-            self.log_server(f"[{message.timestamp}] [EN] {message.english}\n\n", 'cyan')
+            # Server terminal - shows what server SENDS
+            self.log_server(f"[{message.timestamp}] SERVER SENT:\n", 'green')
+            self.log_server(f"  [EN]  {message.english}\n", 'white')
+            self.log_server(f"  [SYN] {message.synthetic}\n\n", 'yellow')
+
+            # Client terminal - shows what client RECEIVES (with translation)
+            self.log_client(f"[{message.timestamp}] CLIENT RECEIVED:\n", 'cyan')
+            self.log_client(f"  [SYN] {message.synthetic}\n", 'yellow')
+            self.log_client(f"  [EN]  {message.english} (translated)\n\n", 'white')
 
             # MITM sees response gibberish
             self.log_mitm(f"[{message.timestamp}] [INTERCEPTED]\n{message.synthetic}\n\n", 'red')
