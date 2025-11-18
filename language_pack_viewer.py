@@ -187,6 +187,20 @@ class LanguagePackViewer:
             self.pack = pack_data
             self.concepts_data = {}
 
+            # Check if WordNet is available
+            wordnet_available = False
+            try:
+                from nltk.corpus import wordnet as wn
+                # Test if we can access WordNet
+                test = list(wn.all_synsets())[:1]
+                wordnet_available = True
+                self.status_label.config(text="WordNet available - loading definitions...")
+            except Exception as e:
+                self.status_label.config(text=f"Warning: WordNet not available - definitions may be limited")
+                print(f"WordNet not available: {e}")
+
+            self.root.update()
+
             # Parse concepts
             for concept_id, pool_data in pack_data['word_pools'].items():
                 # Try to extract lemmas from WordNet concepts
@@ -208,12 +222,29 @@ class LanguagePackViewer:
                             synset = wn.synset(synset_name)
                             definition = synset.definition()
                             lemmas = [lemma.name().replace('_', ' ') for lemma in synset.lemmas()]
-                        except:
-                            definition = concept_id.replace('_', ' ')
+                        except Exception as e:
+                            # Fallback if WordNet lookup fails
+                            definition = f"[WordNet lookup failed: {parts[0]}]"
+                            lemmas = [parts[0]]
+                            print(f"Warning: Could not load WordNet definition for {concept_id}: {e}")
+                    else:
+                        definition = concept_id.replace('_', ' ')
+                        lemmas = [concept_id]
                 else:
-                    # Base concept
-                    definition = concept_id.replace('_', ' ')
-                    lemmas = [concept_id]
+                    # Base concept - try to get from concept dictionary
+                    try:
+                        from core.concepts import ConceptDictionary
+                        cd = ConceptDictionary()
+                        concept_obj = cd.get_concept(concept_id)
+                        if concept_obj:
+                            definition = concept_obj.description
+                            lemmas = [concept_id.replace('_', ' ')]
+                        else:
+                            definition = concept_id.replace('_', ' ')
+                            lemmas = [concept_id]
+                    except:
+                        definition = concept_id.replace('_', ' ')
+                        lemmas = [concept_id]
 
                 # Parse word pool - convert from {word: status} dict to separate lists
                 words_dict = pool_data.get('words', {})
@@ -358,9 +389,17 @@ class LanguagePackViewer:
         self.detail_text.insert(tk.END, f"CONCEPT: {concept_id}\n")
         self.detail_text.insert(tk.END, "═" * 60 + "\n\n")
 
-        # Definition
-        self.detail_text.insert(tk.END, "Definition:\n")
-        self.detail_text.insert(tk.END, f"  {data['definition']}\n\n")
+        # Definition - prominently displayed
+        self.detail_text.insert(tk.END, "📖 DEFINITION:\n", 'bold')
+        self.detail_text.insert(tk.END, "─" * 60 + "\n")
+        if data['definition']:
+            self.detail_text.insert(tk.END, f"{data['definition']}\n")
+        else:
+            self.detail_text.insert(tk.END, "[No definition available - WordNet may not be installed]\n")
+        self.detail_text.insert(tk.END, "─" * 60 + "\n\n")
+
+        # Configure bold tag
+        self.detail_text.tag_config('bold', font=('Courier', 10, 'bold'))
 
         # Lemmas (English words/synonyms)
         self.detail_text.insert(tk.END, "English Words (Lemmas):\n")
