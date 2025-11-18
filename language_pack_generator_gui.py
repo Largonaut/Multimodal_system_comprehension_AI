@@ -60,7 +60,10 @@ class LanguagePackGeneratorGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("GREMLIN Language Pack Generator - WordNet Edition")
-        self.root.geometry("950x900")
+        self.root.geometry("950x800")
+
+        # Make window resizable
+        self.root.resizable(True, True)
 
         # Generation state
         self.is_generating = False
@@ -92,13 +95,26 @@ class LanguagePackGeneratorGUI:
         scrollbar = ttk.Scrollbar(self.root, orient="vertical", command=canvas.yview)
         scrollable_frame = ttk.Frame(canvas, padding="10")
 
+        # Bind scrolling
         scrollable_frame.bind(
             "<Configure>",
             lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
         )
 
-        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        # Mouse wheel scrolling
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
+
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
         canvas.configure(yscrollcommand=scrollbar.set)
+
+        # Update canvas window width when canvas is resized
+        def _configure_canvas(event):
+            canvas.itemconfig(canvas_window, width=event.width)
+
+        canvas.bind("<Configure>", _configure_canvas)
 
         canvas.pack(side="left", fill="both", expand=True)
         scrollbar.pack(side="right", fill="y")
