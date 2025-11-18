@@ -21,7 +21,7 @@ if not exist "language_pack_viewer.py" (
 echo Starting language pack viewer...
 echo.
 
-python language_pack_viewer.py
+py -3.12 language_pack_viewer.py
 
 if errorlevel 1 (
     echo.

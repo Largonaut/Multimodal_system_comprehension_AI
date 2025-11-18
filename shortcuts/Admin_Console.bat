@@ -21,7 +21,7 @@ if not exist "demo\admin_console_tk.py" (
 echo Starting admin console...
 echo.
 
-python demo\admin_console_tk.py
+py -3.12 demo\admin_console_tk.py
 
 if errorlevel 1 (
     echo.

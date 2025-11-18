@@ -21,7 +21,7 @@ if not exist "language_pack_generator_gui.py" (
 echo Starting language pack generator...
 echo.
 
-python language_pack_generator_gui.py
+py -3.12 language_pack_generator_gui.py
 
 if errorlevel 1 (
     echo.

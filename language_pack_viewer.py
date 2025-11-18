@@ -8,6 +8,8 @@ import tkinter as tk
 from tkinter import ttk, filedialog, scrolledtext, messagebox
 from pathlib import Path
 import json
+import sys
+import traceback
 
 
 class LanguagePackViewer:
@@ -500,14 +502,57 @@ class LanguagePackViewer:
 
 def main():
     """Run the language pack viewer."""
-    root = tk.Tk()
+    try:
+        # Print startup diagnostics
+        print("=" * 60)
+        print("GREMLIN Language Pack Viewer - Startup Diagnostics")
+        print("=" * 60)
+        print(f"Python version: {sys.version}")
+        print(f"Python executable: {sys.executable}")
+        print(f"Tkinter version: {tk.TkVersion}")
+        print()
 
-    # Configure style
-    style = ttk.Style()
-    style.theme_use('clam')
+        # Check for WordNet availability
+        try:
+            from nltk.corpus import wordnet as wn
+            print("✓ WordNet available")
+            print(f"  WordNet synsets: {len(list(wn.all_synsets())):,}")
+        except ImportError:
+            print("✗ WordNet NOT available (definitions will show fallback messages)")
+        except Exception as e:
+            print(f"✗ WordNet check failed: {e}")
 
-    app = LanguagePackViewer(root)
-    root.mainloop()
+        print()
+        print("Starting GUI...")
+        print("=" * 60)
+        print()
+
+        root = tk.Tk()
+
+        # Configure style
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        app = LanguagePackViewer(root)
+        root.mainloop()
+
+        print("\nViewer closed successfully.")
+
+    except ImportError as e:
+        print(f"\n❌ IMPORT ERROR: {e}")
+        print("\nThis usually means a required module is missing.")
+        print("Please ensure tkinter is installed with your Python distribution.")
+        print(f"\nPython path: {sys.executable}")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR: {e}")
+        print("\nFull error trace:")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
 
 
 if __name__ == '__main__':
