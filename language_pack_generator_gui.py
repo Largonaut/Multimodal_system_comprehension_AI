@@ -9,6 +9,8 @@ from tkinter import ttk, filedialog, messagebox, scrolledtext
 from pathlib import Path
 from datetime import datetime
 import threading
+import sys
+import traceback
 from core import ConceptDictionary, WordGenerator, LanguagePack
 from core.language_pack import GrammarRules
 from core.wordnet_concepts import WordNetConceptExtractor
@@ -764,14 +766,63 @@ class LanguagePackGeneratorGUI:
 
 def main():
     """Run the language pack generator GUI."""
-    root = tk.Tk()
+    try:
+        # Print startup diagnostics
+        print("=" * 60)
+        print("GREMLIN Language Pack Generator - Startup Diagnostics")
+        print("=" * 60)
+        print(f"Python version: {sys.version}")
+        print(f"Python executable: {sys.executable}")
+        print(f"Tkinter version: {tk.TkVersion}")
+        print()
 
-    # Configure style
-    style = ttk.Style()
-    style.theme_use('clam')
+        # Check for WordNet availability
+        try:
+            from nltk.corpus import wordnet as wn
+            print("✓ WordNet available")
+            print(f"  WordNet synsets: {len(list(wn.all_synsets())):,}")
+            print("  → All tiers enabled (Base, Basic, Standard, Professional, Complete)")
+        except ImportError:
+            print("✗ WordNet NOT available")
+            print("  → Only 'Base Concepts (186)' tier will be available")
+            print("  → To enable WordNet tiers, install NLTK:")
+            print("     pip install nltk")
+            print("     python -m nltk.downloader wordnet")
+        except Exception as e:
+            print(f"✗ WordNet check failed: {e}")
 
-    app = LanguagePackGeneratorGUI(root)
-    root.mainloop()
+        print()
+        print("Starting GUI...")
+        print("=" * 60)
+        print()
+
+        root = tk.Tk()
+
+        # Configure style
+        style = ttk.Style()
+        style.theme_use('clam')
+
+        app = LanguagePackGeneratorGUI(root)
+        root.mainloop()
+
+        print("\nGenerator closed successfully.")
+
+    except ImportError as e:
+        print(f"\n❌ IMPORT ERROR: {e}")
+        print("\nThis usually means a required module is missing.")
+        print("Please ensure all dependencies are installed:")
+        print("  pip install -r requirements.txt")
+        print(f"\nPython path: {sys.executable}")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR: {e}")
+        print("\nFull error trace:")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
 
 
 if __name__ == '__main__':

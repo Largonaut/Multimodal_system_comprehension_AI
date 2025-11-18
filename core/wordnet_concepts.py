@@ -5,7 +5,6 @@ Converts WordNet synsets into GREMLIN concepts.
 
 from typing import List, Set
 from dataclasses import dataclass
-from nltk.corpus import wordnet as wn
 import random
 
 
@@ -35,7 +34,18 @@ class WordNetConceptExtractor:
 
     def __init__(self):
         """Initialize the extractor."""
-        self.all_synsets = list(wn.all_synsets())
+        try:
+            from nltk.corpus import wordnet as wn
+            self.wn = wn
+        except ImportError:
+            raise ImportError(
+                "WordNet (NLTK) is not available. Please install it:\n"
+                "  pip install nltk\n"
+                "  python -m nltk.downloader wordnet\n\n"
+                "Or use the base 186 concepts instead of WordNet tiers."
+            )
+
+        self.all_synsets = list(self.wn.all_synsets())
         print(f"Loaded {len(self.all_synsets)} synsets from WordNet")
 
     def get_synset_frequency_score(self, synset) -> float:
@@ -183,10 +193,10 @@ class WordNetConceptExtractor:
         """Get statistics about WordNet corpus."""
         return {
             'total_synsets': len(self.all_synsets),
-            'nouns': len(list(wn.all_synsets('n'))),
-            'verbs': len(list(wn.all_synsets('v'))),
-            'adjectives': len(list(wn.all_synsets('a'))),
-            'adverbs': len(list(wn.all_synsets('r')))
+            'nouns': len(list(self.wn.all_synsets('n'))),
+            'verbs': len(list(self.wn.all_synsets('v'))),
+            'adjectives': len(list(self.wn.all_synsets('a'))),
+            'adverbs': len(list(self.wn.all_synsets('r')))
         }
 
 
