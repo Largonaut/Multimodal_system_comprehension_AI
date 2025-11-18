@@ -113,7 +113,7 @@ class LanguageViewer(tk.Frame):
         self.info_text.insert(tk.END, f"Words Remaining: {stats['words_remaining']:,}\n")
         self.info_text.insert(tk.END, f"Used Words: {stats['total_used']:,}\n")
         self.info_text.insert(tk.END, f"Usage: {stats['usage_percentage']:.1f}%\n")
-        self.info_text.insert(tk.END, f"Grammar: {self.engine.pack.grammar_rules.word_order}\n")
+        self.info_text.insert(tk.END, f"Grammar: {self.engine.pack.grammar.word_order}\n")
 
         # Update concept list
         self.concept_list.delete(0, tk.END)
