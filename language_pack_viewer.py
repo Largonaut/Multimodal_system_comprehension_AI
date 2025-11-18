@@ -239,14 +239,18 @@ class LanguagePackViewer:
                         cd = ConceptDictionary()
                         concept_obj = cd.get_concept(concept_id)
                         if concept_obj:
-                            definition = concept_obj.description
-                            lemmas = [concept_id.replace('_', ' ')]
+                            # Base concepts use term + variants as the definition
+                            definition = f"{concept_obj.term}"
+                            if concept_obj.variants and len(concept_obj.variants) > 1:
+                                definition += f" ({', '.join(concept_obj.variants[:3])})"
+                            lemmas = [concept_obj.term] + (concept_obj.variants or [])
                         else:
                             definition = concept_id.replace('_', ' ')
                             lemmas = [concept_id]
-                    except:
-                        definition = concept_id.replace('_', ' ')
+                    except Exception as e:
+                        definition = f"{concept_id.replace('_', ' ')} [Error loading concept: {e}]"
                         lemmas = [concept_id]
+                        print(f"Warning: Could not load base concept {concept_id}: {e}")
 
                 # Parse word pool - convert from {word: status} dict to separate lists
                 words_dict = pool_data.get('words', {})

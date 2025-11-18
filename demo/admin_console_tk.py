@@ -12,6 +12,7 @@ import random
 import os
 import sys
 import subprocess
+import traceback
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
@@ -109,8 +110,9 @@ class LanguageViewer(tk.Frame):
         self.info_text.insert(tk.END, f"Language ID: {stats['language_id']}\n")
         self.info_text.insert(tk.END, f"Total Concepts: {stats['total_concepts']}\n")
         self.info_text.insert(tk.END, f"Total Words: {stats['total_words']:,}\n")
-        self.info_text.insert(tk.END, f"Unused Words: {stats['unused_count']:,}\n")
-        self.info_text.insert(tk.END, f"Used Words: {stats['used_count']:,}\n")
+        self.info_text.insert(tk.END, f"Words Remaining: {stats['words_remaining']:,}\n")
+        self.info_text.insert(tk.END, f"Used Words: {stats['total_used']:,}\n")
+        self.info_text.insert(tk.END, f"Usage: {stats['usage_percentage']:.1f}%\n")
         self.info_text.insert(tk.END, f"Grammar: {self.engine.pack.grammar_rules.word_order}\n")
 
         # Update concept list
@@ -645,43 +647,74 @@ class GremlinAdminGUI:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="GREMLIN Admin Console (Tkinter)")
-    parser.add_argument('--pack', '-p', type=Path, required=False, help="Language pack file (optional, will show picker if not provided)")
-    parser.add_argument('--mode', choices=['demo', 'network'], default='demo', help="Mode")
+    try:
+        # Print startup diagnostics
+        print("=" * 60)
+        print("GREMLIN Admin Console - Startup Diagnostics")
+        print("=" * 60)
+        print(f"Python version: {sys.version}")
+        print(f"Python executable: {sys.executable}")
+        print(f"Tkinter version: {tk.TkVersion}")
+        print()
+        print("Starting admin console...")
+        print("=" * 60)
+        print()
 
-    args = parser.parse_args()
+        parser = argparse.ArgumentParser(description="GREMLIN Admin Console (Tkinter)")
+        parser.add_argument('--pack', '-p', type=Path, required=False, help="Language pack file (optional, will show picker if not provided)")
+        parser.add_argument('--mode', choices=['demo', 'network'], default='demo', help="Mode")
 
-    # If no pack specified, show file picker
-    pack_path = args.pack
-    if not pack_path:
-        # Create temporary Tk window for file picker
-        root = tk.Tk()
-        root.withdraw()  # Hide the main window
+        args = parser.parse_args()
 
-        default_dir = Path(__file__).parent.parent / "language_packs"
-        if not default_dir.exists():
-            default_dir = Path.cwd()
-
-        pack_path = filedialog.askopenfilename(
-            title="Select Language Pack",
-            initialdir=default_dir,
-            filetypes=[("Language Packs", "*.json"), ("All Files", "*.*")]
-        )
-
-        root.destroy()
-
+        # If no pack specified, show file picker
+        pack_path = args.pack
         if not pack_path:
-            print("No language pack selected. Exiting.")
-            return
+            # Create temporary Tk window for file picker
+            root = tk.Tk()
+            root.withdraw()  # Hide the main window
 
-        pack_path = Path(pack_path)
+            default_dir = Path(__file__).parent.parent / "language_packs"
+            if not default_dir.exists():
+                default_dir = Path.cwd()
 
-    # Initialize engine
-    engine = GremlinEngine(pack_path, mode=args.mode)
+            pack_path = filedialog.askopenfilename(
+                title="Select Language Pack",
+                initialdir=default_dir,
+                filetypes=[("Language Packs", "*.json"), ("All Files", "*.*")]
+            )
 
-    # Run GUI
-    app = GremlinAdminGUI(engine)
-    app.run()
+            root.destroy()
+
+            if not pack_path:
+                print("No language pack selected. Exiting.")
+                return
+
+            pack_path = Path(pack_path)
+
+        # Initialize engine
+        engine = GremlinEngine(pack_path, mode=args.mode)
+
+        # Run GUI
+        app = GremlinAdminGUI(engine)
+        app.run()
+
+        print("\nAdmin console closed successfully.")
+
+    except ImportError as e:
+        print(f"\n❌ IMPORT ERROR: {e}")
+        print("\nThis usually means a required module is missing.")
+        print("Please ensure all dependencies are installed.")
+        print(f"\nPython path: {sys.executable}")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
+
+    except Exception as e:
+        print(f"\n❌ UNEXPECTED ERROR: {e}")
+        print("\nFull error trace:")
+        traceback.print_exc()
+        input("\nPress Enter to exit...")
+        sys.exit(1)
 
 
 if __name__ == '__main__':
