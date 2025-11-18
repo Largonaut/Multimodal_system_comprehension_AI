@@ -184,6 +184,9 @@ class GremlinAdminGUI:
         self.root.title("GREMLIN Admin Console - God Mode")
         self.root.geometry("1400x900")
 
+        # UI Settings
+        self.ui_scale = 1.0  # Default scale factor
+
         # Color scheme
         self.colors = {
             'bg': '#1e1e1e',
@@ -215,6 +218,10 @@ class GremlinAdminGUI:
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Tools", menu=tools_menu)
         tools_menu.add_command(label="Generate New Language Pack...", command=self.launch_generator)
+
+        settings_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Settings", menu=settings_menu)
+        settings_menu.add_command(label="UI Scale...", command=self.open_scale_settings)
 
         # Header
         header = tk.Frame(self.root, bg='#0066cc', height=60)
@@ -648,10 +655,114 @@ class GremlinAdminGUI:
         self.stats_text.delete('1.0', tk.END)
         self.stats_text.insert(tk.END, f"Lang ID:\n{stats['language_id'][:8]}...\n\n")
         self.stats_text.insert(tk.END, f"Words: {stats['total_words']:,}\n")
-        self.stats_text.insert(tk.END, f"Unused: {stats['unused_count']:,}\n")
-        self.stats_text.insert(tk.END, f"Used: {stats['used_count']:,}\n")
+        self.stats_text.insert(tk.END, f"Remaining: {stats.get('words_remaining', 0):,}\n")
+        self.stats_text.insert(tk.END, f"Used: {stats.get('total_used', 0):,}\n")
         self.stats_text.insert(tk.END, f"Packets: {stats['packet_count']}\n")
         self.stats_text.insert(tk.END, f"Est. Rounds: {stats['estimated_rounds']:,}\n")
+
+    def open_scale_settings(self):
+        """Open UI scale settings dialog."""
+        dialog = tk.Toplevel(self.root)
+        dialog.title("UI Scale Settings")
+        dialog.geometry("400x250")
+        dialog.configure(bg=self.colors['panel'])
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        # Center the dialog
+        dialog.update_idletasks()
+        x = self.root.winfo_x() + (self.root.winfo_width() - dialog.winfo_width()) // 2
+        y = self.root.winfo_y() + (self.root.winfo_height() - dialog.winfo_height()) // 2
+        dialog.geometry(f"+{x}+{y}")
+
+        # Title
+        title_frame = tk.Frame(dialog, bg='#0066cc', height=50)
+        title_frame.pack(fill=tk.X)
+        title_frame.pack_propagate(False)
+
+        tk.Label(
+            title_frame,
+            text="⚙️ UI Scale Settings",
+            font=('Courier', 14, 'bold'),
+            bg='#0066cc',
+            fg='white'
+        ).pack(pady=10)
+
+        # Content frame
+        content = tk.Frame(dialog, bg=self.colors['panel'])
+        content.pack(fill=tk.BOTH, expand=True, padx=20, pady=20)
+
+        # Current scale display
+        scale_var = tk.DoubleVar(value=self.ui_scale)
+        scale_label = tk.Label(
+            content,
+            text=f"Current Scale: {self.ui_scale:.1f}x",
+            font=('Courier', 12, 'bold'),
+            bg=self.colors['panel'],
+            fg='#00ff00'
+        )
+        scale_label.pack(pady=(0, 20))
+
+        # Description
+        tk.Label(
+            content,
+            text="Adjust the UI scale (requires restart to take full effect)",
+            font=('Arial', 9),
+            bg=self.colors['panel'],
+            fg='#aaaaaa',
+            wraplength=350
+        ).pack(pady=(0, 10))
+
+        # Scale slider
+        def update_scale_label(value):
+            scale_label.config(text=f"Current Scale: {float(value):.1f}x")
+
+        scale_slider = tk.Scale(
+            content,
+            from_=0.5,
+            to=2.0,
+            resolution=0.1,
+            orient=tk.HORIZONTAL,
+            variable=scale_var,
+            command=update_scale_label,
+            bg=self.colors['panel'],
+            fg='white',
+            highlightthickness=0,
+            length=300,
+            font=('Arial', 9)
+        )
+        scale_slider.pack(pady=10)
+
+        # Buttons
+        button_frame = tk.Frame(dialog, bg=self.colors['panel'])
+        button_frame.pack(pady=10)
+
+        def apply_scale():
+            new_scale = scale_var.get()
+            self.ui_scale = new_scale
+
+            # Apply tkinter scaling
+            self.root.tk.call('tk', 'scaling', new_scale * 75)
+
+            messagebox.showinfo(
+                "Scale Applied",
+                f"UI scale set to {new_scale:.1f}x\n\n"
+                "Note: Some elements may require restarting\n"
+                "the application for full effect."
+            )
+            dialog.destroy()
+
+        ttk.Button(
+            button_frame,
+            text="Apply",
+            command=apply_scale
+        ).pack(side=tk.LEFT, padx=5)
+
+        ttk.Button(
+            button_frame,
+            text="Cancel",
+            command=dialog.destroy
+        ).pack(side=tk.LEFT, padx=5)
 
     def run(self):
         """Run the GUI."""
