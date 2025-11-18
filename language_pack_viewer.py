@@ -414,18 +414,31 @@ class LanguagePackViewer:
         self.words_text.insert(tk.END, f"{status} for '{data['lemmas'][0] if data['lemmas'] else concept_id}':\n")
         self.words_text.insert(tk.END, "─" * 60 + "\n\n")
 
+        # Lazy loading - only show first 1000 words at a time
+        MAX_DISPLAY = 1000
+        display_words = words[:MAX_DISPLAY]
+
         # Show words in columns
         words_per_line = 4
-        for i, word in enumerate(words, 1):
+        for i, word in enumerate(display_words, 1):
             self.words_text.insert(tk.END, f"{word:20s}")
             if i % words_per_line == 0:
                 self.words_text.insert(tk.END, "\n")
 
-        if len(words) % words_per_line != 0:
+        if len(display_words) % words_per_line != 0:
             self.words_text.insert(tk.END, "\n")
 
         self.words_text.insert(tk.END, f"\n─" * 60 + "\n")
-        self.words_text.insert(tk.END, f"Showing {len(words):,} of {len(pool['unused']) + len(pool['used']) + len(pool['use_last']):,} total words")
+
+        total_in_pool = len(pool['unused']) + len(pool['used']) + len(pool['use_last'])
+
+        if len(words) > MAX_DISPLAY:
+            self.words_text.insert(tk.END, f"Showing first {MAX_DISPLAY:,} of {len(words):,} {status.lower()}\n")
+            self.words_text.insert(tk.END, f"(Total in concept: {total_in_pool:,} words)\n\n")
+            self.words_text.insert(tk.END, "💡 Tip: Use filters to narrow down the list\n")
+        else:
+            self.words_text.insert(tk.END, f"Showing all {len(words):,} {status.lower()}\n")
+            self.words_text.insert(tk.END, f"(Total in concept: {total_in_pool:,} words)")
 
 
 def main():
