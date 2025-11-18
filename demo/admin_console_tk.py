@@ -6,9 +6,10 @@ Clean, user-friendly god-mode interface.
 
 import argparse
 import tkinter as tk
-from tkinter import ttk, scrolledtext
+from tkinter import ttk, scrolledtext, filedialog, messagebox
 from pathlib import Path
 import random
+import os
 
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -46,6 +47,16 @@ class GremlinAdminGUI:
         """Build the UI layout."""
         # Configure root
         self.root.configure(bg=self.colors['bg'])
+
+        # Menu bar
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="File", menu=file_menu)
+        file_menu.add_command(label="Load Language Pack...", command=self.load_language_pack)
+        file_menu.add_separator()
+        file_menu.add_command(label="Exit", command=self.root.quit)
 
         # Header
         header = tk.Frame(self.root, bg='#0066cc', height=60)
@@ -393,6 +404,36 @@ class GremlinAdminGUI:
         self.engine.packet_count += 2
         self.update_stats()
 
+    def load_language_pack(self):
+        """Show file picker to load a new language pack and restart."""
+        # Get language_packs directory
+        default_dir = Path(__file__).parent.parent / "language_packs"
+        if not default_dir.exists():
+            default_dir = Path.cwd()
+
+        # Show file picker
+        pack_path = filedialog.askopenfilename(
+            title="Select Language Pack",
+            initialdir=default_dir,
+            filetypes=[("Language Packs", "*.json"), ("All Files", "*.*")]
+        )
+
+        if not pack_path:
+            return  # User cancelled
+
+        # Confirm restart
+        response = messagebox.askyesno(
+            "Load Language Pack",
+            f"Loading a new language pack will restart the application.\n\n"
+            f"Selected: {Path(pack_path).name}\n\n"
+            f"Continue?"
+        )
+
+        if response:
+            # Restart the app with new pack
+            self.root.destroy()
+            os.execv(sys.executable, [sys.executable] + sys.argv[:1] + ['--pack', pack_path, '--mode', self.engine.mode])
+
     def handle_new_message(self, message):
         """Handle new message from engine."""
         if message.sender == "client":
@@ -458,13 +499,38 @@ class GremlinAdminGUI:
 
 def main():
     parser = argparse.ArgumentParser(description="GREMLIN Admin Console (Tkinter)")
-    parser.add_argument('--pack', '-p', type=Path, required=True, help="Language pack file")
+    parser.add_argument('--pack', '-p', type=Path, required=False, help="Language pack file (optional, will show picker if not provided)")
     parser.add_argument('--mode', choices=['demo', 'network'], default='demo', help="Mode")
 
     args = parser.parse_args()
 
+    # If no pack specified, show file picker
+    pack_path = args.pack
+    if not pack_path:
+        # Create temporary Tk window for file picker
+        root = tk.Tk()
+        root.withdraw()  # Hide the main window
+
+        default_dir = Path(__file__).parent.parent / "language_packs"
+        if not default_dir.exists():
+            default_dir = Path.cwd()
+
+        pack_path = filedialog.askopenfilename(
+            title="Select Language Pack",
+            initialdir=default_dir,
+            filetypes=[("Language Packs", "*.json"), ("All Files", "*.*")]
+        )
+
+        root.destroy()
+
+        if not pack_path:
+            print("No language pack selected. Exiting.")
+            return
+
+        pack_path = Path(pack_path)
+
     # Initialize engine
-    engine = GremlinEngine(args.pack, mode=args.mode)
+    engine = GremlinEngine(pack_path, mode=args.mode)
 
     # Run GUI
     app = GremlinAdminGUI(engine)
