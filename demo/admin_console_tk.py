@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 GREMLIN Admin Console - Tkinter GUI
-Clean, user-friendly god-mode interface.
+Real demonstration interface with language viewer.
 """
 
 import argparse
@@ -10,11 +10,163 @@ from tkinter import ttk, scrolledtext, filedialog, messagebox
 from pathlib import Path
 import random
 import os
-
 import sys
+import subprocess
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from engine import GremlinEngine
+
+
+class LanguageViewer(tk.Frame):
+    """Widget for viewing language pack contents."""
+
+    def __init__(self, parent, engine):
+        super().__init__(parent)
+        self.engine = engine
+        self.setup_ui()
+        self.refresh_data()
+
+    def setup_ui(self):
+        """Build the language viewer UI."""
+        # Header
+        header = tk.Label(
+            self,
+            text="📖 Language Pack Viewer",
+            font=('Arial', 14, 'bold'),
+            bg='#2d2d2d',
+            fg='white'
+        )
+        header.pack(fill=tk.X, pady=10)
+
+        # Pack info
+        info_frame = tk.Frame(self, bg='#2d2d2d')
+        info_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        self.info_text = tk.Text(
+            info_frame,
+            height=6,
+            bg='#1e1e1e',
+            fg='#00ffff',
+            font=('Courier', 10),
+            relief=tk.FLAT
+        )
+        self.info_text.pack(fill=tk.X)
+
+        # Search/filter
+        filter_frame = tk.Frame(self, bg='#2d2d2d')
+        filter_frame.pack(fill=tk.X, padx=10, pady=5)
+
+        tk.Label(filter_frame, text="Filter Concept:", bg='#2d2d2d', fg='white').pack(side=tk.LEFT, padx=5)
+        self.filter_entry = tk.Entry(filter_frame, width=20)
+        self.filter_entry.pack(side=tk.LEFT, padx=5)
+        self.filter_entry.bind('<KeyRelease>', lambda e: self.refresh_data())
+
+        ttk.Button(filter_frame, text="Refresh", command=self.refresh_data).pack(side=tk.LEFT, padx=5)
+
+        # Concept list
+        list_frame = tk.Frame(self, bg='#2d2d2d')
+        list_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        # Scrollable list
+        scroll = tk.Scrollbar(list_frame)
+        scroll.pack(side=tk.RIGHT, fill=tk.Y)
+
+        self.concept_list = tk.Listbox(
+            list_frame,
+            bg='#1e1e1e',
+            fg='#00ff00',
+            font=('Courier', 9),
+            yscrollcommand=scroll.set,
+            selectmode=tk.SINGLE
+        )
+        self.concept_list.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scroll.config(command=self.concept_list.yview)
+
+        self.concept_list.bind('<<ListboxSelect>>', self.show_concept_details)
+
+        # Details panel
+        details_frame = tk.Frame(self, bg='#2d2d2d')
+        details_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+
+        tk.Label(details_frame, text="Selected Concept Details:", bg='#2d2d2d', fg='white').pack(anchor=tk.W)
+
+        self.details_text = scrolledtext.ScrolledText(
+            details_frame,
+            height=15,
+            bg='#1e1e1e',
+            fg='#ffff00',
+            font=('Courier', 9),
+            wrap=tk.WORD
+        )
+        self.details_text.pack(fill=tk.BOTH, expand=True)
+
+    def refresh_data(self):
+        """Refresh the language pack data."""
+        # Update pack info
+        self.info_text.delete('1.0', tk.END)
+        stats = self.engine.pack.get_stats()
+        self.info_text.insert(tk.END, f"Language ID: {stats['language_id']}\n")
+        self.info_text.insert(tk.END, f"Total Concepts: {stats['total_concepts']}\n")
+        self.info_text.insert(tk.END, f"Total Words: {stats['total_words']:,}\n")
+        self.info_text.insert(tk.END, f"Unused Words: {stats['unused_count']:,}\n")
+        self.info_text.insert(tk.END, f"Used Words: {stats['used_count']:,}\n")
+        self.info_text.insert(tk.END, f"Grammar: {self.engine.pack.grammar_rules.word_order}\n")
+
+        # Update concept list
+        self.concept_list.delete(0, tk.END)
+        filter_text = self.filter_entry.get().lower()
+
+        for concept_id in sorted(self.engine.pack.word_pools.keys()):
+            if filter_text and filter_text not in concept_id.lower():
+                continue
+
+            pool = self.engine.pack.word_pools[concept_id]
+            unused = len(pool.unused)
+            used = len(pool.used)
+            total = unused + used + len(pool.use_last)
+
+            self.concept_list.insert(tk.END, f"{concept_id:30s} │ {unused:6,}/{total:6,} unused")
+
+    def show_concept_details(self, event):
+        """Show details for selected concept."""
+        selection = self.concept_list.curselection()
+        if not selection:
+            return
+
+        # Parse concept ID from list item
+        item = self.concept_list.get(selection[0])
+        concept_id = item.split('│')[0].strip()
+
+        # Get concept info
+        concept = self.engine.concept_dict.get_concept(concept_id)
+        pool = self.engine.pack.word_pools.get(concept_id)
+
+        if not concept or not pool:
+            return
+
+        # Show details
+        self.details_text.delete('1.0', tk.END)
+        self.details_text.insert(tk.END, f"═══════════════════════════════════════\n")
+        self.details_text.insert(tk.END, f"CONCEPT: {concept.id}\n")
+        self.details_text.insert(tk.END, f"═══════════════════════════════════════\n\n")
+
+        self.details_text.insert(tk.END, f"Category: {concept.category}\n")
+        self.details_text.insert(tk.END, f"Description: {concept.description}\n\n")
+
+        self.details_text.insert(tk.END, f"Word Pool Statistics:\n")
+        self.details_text.insert(tk.END, f"  Unused:   {len(pool.unused):,}\n")
+        self.details_text.insert(tk.END, f"  Used:     {len(pool.used):,}\n")
+        self.details_text.insert(tk.END, f"  Use-Last: {len(pool.use_last):,}\n")
+        self.details_text.insert(tk.END, f"  Total:    {len(pool.unused) + len(pool.used) + len(pool.use_last):,}\n\n")
+
+        # Show sample words
+        self.details_text.insert(tk.END, f"Sample Unused Words (first 20):\n")
+        for i, word in enumerate(list(pool.unused)[:20], 1):
+            self.details_text.insert(tk.END, f"  {i:2d}. {word}\n")
+
+        if len(pool.unused) > 20:
+            self.details_text.insert(tk.END, f"  ... and {len(pool.unused) - 20:,} more\n")
 
 
 class GremlinAdminGUI:
@@ -28,7 +180,7 @@ class GremlinAdminGUI:
         # Create main window
         self.root = tk.Tk()
         self.root.title("GREMLIN Admin Console - God Mode")
-        self.root.geometry("1200x800")
+        self.root.geometry("1400x900")
 
         # Color scheme
         self.colors = {
@@ -58,6 +210,10 @@ class GremlinAdminGUI:
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self.root.quit)
 
+        tools_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Tools", menu=tools_menu)
+        tools_menu.add_command(label="Generate New Language Pack...", command=self.launch_generator)
+
         # Header
         header = tk.Frame(self.root, bg='#0066cc', height=60)
         header.pack(fill=tk.X, side=tk.TOP)
@@ -72,12 +228,26 @@ class GremlinAdminGUI:
         )
         title.pack(pady=15)
 
-        # Main content area
-        content = tk.Frame(self.root, bg=self.colors['bg'])
-        content.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        # Notebook (tabs)
+        notebook = ttk.Notebook(self.root)
+        notebook.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
 
+        # Tab 1: Communication
+        comm_tab = tk.Frame(notebook, bg=self.colors['bg'])
+        notebook.add(comm_tab, text="💬 Communication")
+        self.setup_comm_tab(comm_tab)
+
+        # Tab 2: Language Viewer
+        viewer_tab = tk.Frame(notebook, bg=self.colors['bg'])
+        notebook.add(viewer_tab, text="📖 Language Viewer")
+        self.language_viewer = LanguageViewer(viewer_tab, self.engine)
+        self.language_viewer.pack(fill=tk.BOTH, expand=True)
+        self.language_viewer.configure(bg=self.colors['bg'])
+
+    def setup_comm_tab(self, parent):
+        """Setup the communication tab."""
         # Top section: Models visualization
-        models_frame = tk.Frame(content, bg=self.colors['bg'])
+        models_frame = tk.Frame(parent, bg=self.colors['bg'])
         models_frame.pack(fill=tk.X, pady=(0, 10))
 
         # CLIENT model
@@ -167,7 +337,7 @@ class GremlinAdminGUI:
         self.stats_text.pack(padx=5, pady=5)
 
         # Middle section: Log panels
-        logs_frame = tk.Frame(content, bg=self.colors['bg'])
+        logs_frame = tk.Frame(parent, bg=self.colors['bg'])
         logs_frame.pack(fill=tk.BOTH, expand=True, pady=(0, 10))
 
         # CLIENT log
@@ -230,149 +400,72 @@ class GremlinAdminGUI:
         )
         self.server_log.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
 
-        # Bottom section: Controls
-        controls_frame = tk.Frame(content, bg=self.colors['panel'], relief=tk.RAISED, bd=2)
+        # Bottom section: Message input
+        controls_frame = tk.Frame(parent, bg=self.colors['panel'], relief=tk.RAISED, bd=2)
         controls_frame.pack(fill=tk.X)
 
         tk.Label(
             controls_frame,
-            text="ADMIN CONTROLS",
+            text="💬 SEND MESSAGE",
             font=('Courier', 11, 'bold'),
             bg=self.colors['panel'],
             fg='#ffff00'
         ).pack(pady=5)
 
-        buttons_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
-        buttons_frame.pack(pady=5)
-
-        # Buttons
-        ttk.Button(
-            buttons_frame,
-            text="📤 Send Auth",
-            command=self.send_auth
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            buttons_frame,
-            text="⚠️ Attack Mode",
-            command=self.attack_mode
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            buttons_frame,
-            text="🔄 Rotate Language",
-            command=self.rotate_language
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            buttons_frame,
-            text="🚀 Auto Send (5x)",
-            command=self.auto_send
-        ).pack(side=tk.LEFT, padx=5)
-
-        ttk.Button(
-            buttons_frame,
-            text="❌ Quit",
-            command=self.root.quit
-        ).pack(side=tk.LEFT, padx=5)
-
-        # Chat mode
-        chat_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
-        chat_frame.pack(pady=10, padx=10, fill=tk.X)
+        # Message entry
+        msg_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
+        msg_frame.pack(pady=10, padx=10, fill=tk.X)
 
         tk.Label(
-            chat_frame,
-            text="💬 CHAT MODE:",
+            msg_frame,
+            text="Message:",
             font=('Courier', 10, 'bold'),
             bg=self.colors['panel'],
-            fg='#00ff00'
+            fg='white'
         ).pack(side=tk.LEFT, padx=5)
 
-        self.chat_entry = tk.Entry(
-            chat_frame,
+        self.message_entry = tk.Entry(
+            msg_frame,
             font=('Courier', 10),
             bg='#333333',
             fg='white',
             insertbackground='white'
         )
-        self.chat_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        self.chat_entry.bind('<Return>', lambda e: self.send_chat_message())
+        self.message_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        self.message_entry.bind('<Return>', lambda e: self.send_as_client())
 
         ttk.Button(
-            chat_frame,
-            text="Send Message",
-            command=self.send_chat_message
+            msg_frame,
+            text="Send as CLIENT →",
+            command=self.send_as_client
         ).pack(side=tk.LEFT, padx=5)
 
-    def send_auth(self):
-        """Send one authentication message."""
-        self.engine.send_authentication()
+        ttk.Button(
+            msg_frame,
+            text="← Send as SERVER",
+            command=self.send_as_server
+        ).pack(side=tk.LEFT, padx=5)
 
-    def attack_mode(self):
-        """Simulate attack."""
-        gibberish = self.engine.simulate_attack()
-        self.log_mitm(f"\n⚠️ [ATTACK ATTEMPT] ⚠️\n{gibberish}\n⚠️ Cannot decrypt without language pack!\n", 'red')
+        # Clear logs button
+        clear_frame = tk.Frame(controls_frame, bg=self.colors['panel'])
+        clear_frame.pack(pady=5)
 
-    def rotate_language(self):
-        """ACTUALLY rotate to a new language pack."""
-        # Show progress
-        self.log_mitm("\n🔄 Generating new language pack...\n", 'cyan')
-        self.root.update()
+        ttk.Button(
+            clear_frame,
+            text="🗑️ Clear All Logs",
+            command=self.clear_logs
+        ).pack(side=tk.LEFT, padx=5)
 
-        # Generate new pack
-        from pathlib import Path
-        import tempfile
-        temp_dir = Path(tempfile.gettempdir()) / 'gremlin_temp'
-        temp_dir.mkdir(exist_ok=True)
-
-        new_pack_path = self.engine.generate_new_pack(
-            words_per_concept=500,  # Smaller for speed
-            output_path=temp_dir / f"temp_pack_{random.randint(1000, 9999)}.json"
-        )
-
-        self.log_mitm(f"✅ Generated: {new_pack_path.name}\n", 'green')
-        self.root.update()
-
-        # Load new pack
-        self.log_mitm("🔄 Loading new pack...\n", 'cyan')
-        self.root.update()
-
-        self.engine.rotate_language(new_pack_path)
-
-        # Clear all logs
-        self.client_log.delete('1.0', tk.END)
-        self.mitm_log.delete('1.0', tk.END)
-        self.server_log.delete('1.0', tk.END)
-
-        # Change visual colors
-        colors = ['🟩', '🟦', '🟪', '🟨', '🟧']
-        new_color = random.choice(colors)
-
-        self.client_visual.config(text=f"  ┌──────┐\n  │ ◖◗   │\n  │ {new_color}   │\n  └──────┘")
-        self.server_visual.config(text=f"  ┌──────┐\n  │   ◖◗ │\n  │   {new_color} │\n  └──────┘")
-
-        self.log_mitm("\n✅ NEW LANGUAGE LOADED!\n", 'green')
-        self.log_mitm("Old messages now worthless. Perfect forward secrecy!\n\n", 'cyan')
-
-        # Update stats
-        self.update_stats()
-
-    def auto_send(self):
-        """Send 5 auth messages automatically."""
-        for _ in range(5):
-            self.send_auth()
-            self.root.update()
-
-    def send_chat_message(self):
-        """Send custom chat message."""
-        message = self.chat_entry.get().strip()
+    def send_as_client(self):
+        """Send message from client side."""
+        message = self.message_entry.get().strip()
         if not message:
             return
 
         # Translate message to synthetic
         synthetic = self.engine.translator.translate_to_synthetic(message)
 
-        # Create fake message object
+        # Create message
         from engine import Message
         from datetime import datetime
 
@@ -386,23 +479,79 @@ class GremlinAdminGUI:
 
         self.handle_new_message(msg)
 
-        # Generate server response (echo back)
-        response_msg = Message(
+        # Clear entry
+        self.message_entry.delete(0, tk.END)
+
+        # Update stats
+        self.engine.packet_count += 1
+        self.update_stats()
+
+        # Refresh language viewer
+        self.language_viewer.refresh_data()
+
+    def send_as_server(self):
+        """Send message from server side."""
+        message = self.message_entry.get().strip()
+        if not message:
+            return
+
+        # Translate message to synthetic
+        synthetic = self.engine.translator.translate_to_synthetic(message)
+
+        # Create message
+        from engine import Message
+        from datetime import datetime
+
+        msg = Message(
             timestamp=datetime.now().strftime("%H:%M:%S"),
             direction='server->client',
-            english=f"Received: {message}",
-            synthetic=self.engine.translator.translate_to_synthetic(f"Received: {message}"),
+            english=message,
+            synthetic=synthetic,
             sender='server'
         )
 
-        self.handle_new_message(response_msg)
+        self.handle_new_message(msg)
 
         # Clear entry
-        self.chat_entry.delete(0, tk.END)
+        self.message_entry.delete(0, tk.END)
 
         # Update stats
-        self.engine.packet_count += 2
+        self.engine.packet_count += 1
         self.update_stats()
+
+        # Refresh language viewer
+        self.language_viewer.refresh_data()
+
+    def clear_logs(self):
+        """Clear all log panels."""
+        self.client_log.delete('1.0', tk.END)
+        self.mitm_log.delete('1.0', tk.END)
+        self.server_log.delete('1.0', tk.END)
+
+    def launch_generator(self):
+        """Launch the language pack generator GUI."""
+        generator_path = Path(__file__).parent.parent / "language_pack_generator_gui.py"
+
+        if not generator_path.exists():
+            messagebox.showerror("Error", f"Generator not found:\n{generator_path}")
+            return
+
+        # Launch in separate process
+        try:
+            if sys.platform == 'win32':
+                subprocess.Popen([sys.executable, str(generator_path)],
+                               creationflags=subprocess.CREATE_NEW_CONSOLE)
+            else:
+                subprocess.Popen([sys.executable, str(generator_path)])
+
+            messagebox.showinfo(
+                "Generator Launched",
+                "Language pack generator opened in new window.\n\n"
+                "After generating a pack, use:\n"
+                "File > Load Language Pack... to load it."
+            )
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to launch generator:\n{e}")
 
     def load_language_pack(self):
         """Show file picker to load a new language pack and restart."""
@@ -458,38 +607,36 @@ class GremlinAdminGUI:
         # Animate MITM visual
         self.animate_mitm()
 
+    def animate_mitm(self):
+        """Briefly animate MITM interception."""
+        self.mitm_visual.config(fg='#ff0000')
+        self.root.after(200, lambda: self.mitm_visual.config(fg='#ffaa00'))
+
     def log_client(self, text, color='white'):
-        """Add to client log."""
+        """Log to client panel."""
         self.client_log.insert(tk.END, text)
         self.client_log.see(tk.END)
 
     def log_mitm(self, text, color='white'):
-        """Add to MITM log."""
+        """Log to MITM panel."""
         self.mitm_log.insert(tk.END, text)
         self.mitm_log.see(tk.END)
 
     def log_server(self, text, color='white'):
-        """Add to server log."""
+        """Log to server panel."""
         self.server_log.insert(tk.END, text)
         self.server_log.see(tk.END)
 
-    def animate_mitm(self):
-        """Animate MITM visual briefly."""
-        self.mitm_visual.config(fg='#ff0000')
-        self.root.after(200, lambda: self.mitm_visual.config(fg='#ffaa00'))
-
     def update_stats(self):
-        """Update stats panel."""
+        """Update statistics display."""
         stats = self.engine.get_stats()
 
         self.stats_text.delete('1.0', tk.END)
-        self.stats_text.insert(tk.END, f"Language ID:\n{stats['language_id']}\n\n")
-        self.stats_text.insert(tk.END, f"Total Words: {stats['total_words']:,}\n")
-        self.stats_text.insert(tk.END, f"Words Used: {stats['words_used']:,}\n")
-        self.stats_text.insert(tk.END, f"Remaining: {stats['words_remaining']:,}\n")
-        self.stats_text.insert(tk.END, f"Usage: {stats['usage_percent']:.3f}%\n\n")
+        self.stats_text.insert(tk.END, f"Lang ID:\n{stats['language_id'][:8]}...\n\n")
+        self.stats_text.insert(tk.END, f"Words: {stats['total_words']:,}\n")
+        self.stats_text.insert(tk.END, f"Unused: {stats['unused_count']:,}\n")
+        self.stats_text.insert(tk.END, f"Used: {stats['used_count']:,}\n")
         self.stats_text.insert(tk.END, f"Packets: {stats['packet_count']}\n")
-        self.stats_text.insert(tk.END, f"Attacks: {stats['attack_count']}\n")
         self.stats_text.insert(tk.END, f"Est. Rounds: {stats['estimated_rounds']:,}\n")
 
     def run(self):
