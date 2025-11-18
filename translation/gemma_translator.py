@@ -155,19 +155,21 @@ class GemmaTranslator:
         """
         if to_synthetic:
             # English -> Synthetic (simplified word-by-word)
-            words = text.lower().replace(',', '').split()
+            words = text.lower().replace(',', '').replace('?', '').replace('!', '').split()
             synthetic_words = []
 
             for word in words:
-                # Search for concept
-                matches = self.concept_dict.search_by_term(word)
-                if matches:
-                    concept = matches[0]
-                    syn_word = self.pack.get_word_for_concept(concept.id)
+                # Try to find matching concept in the pack
+                concept_id = self._find_concept_for_word(word)
+
+                if concept_id:
+                    syn_word = self.pack.get_word_for_concept(concept_id)
                     if syn_word:
                         synthetic_words.append(syn_word)
-                else:
-                    synthetic_words.append(word)  # Keep unknown words
+                        continue
+
+                # If no match, keep the word
+                synthetic_words.append(word)
 
             return ' '.join(synthetic_words)
         else:
@@ -180,16 +182,58 @@ class GemmaTranslator:
                 found = False
                 for concept_id, pool in self.pack.word_pools.items():
                     if word in pool.words:
+                        # Try to get English from concept dict
                         concept = self.concept_dict.get_concept(concept_id)
                         if concept:
                             english_words.append(concept.term)
                             found = True
                             break
 
+                        # If not in dict, try to extract from WordNet concept_id
+                        if concept_id.startswith('wordnet_'):
+                            # Format: wordnet_word_pos_num
+                            parts = concept_id.split('_')
+                            if len(parts) >= 2:
+                                eng_word = parts[1]  # Extract the word
+                                english_words.append(eng_word)
+                                found = True
+                                break
+
                 if not found:
                     english_words.append(word)
 
             return ' '.join(english_words)
+
+    def _find_concept_for_word(self, word: str) -> Optional[str]:
+        """
+        Find a concept ID for an English word.
+
+        Searches both base concepts and WordNet concepts in the pack.
+        """
+        # First try base concept dictionary
+        matches = self.concept_dict.search_by_term(word)
+        if matches:
+            concept_id = matches[0].id
+            # Check if this concept exists in the pack
+            if concept_id in self.pack.word_pools:
+                return concept_id
+
+        # Try WordNet concepts in the pack
+        for concept_id in self.pack.word_pools.keys():
+            if concept_id.startswith('wordnet_'):
+                # Format: wordnet_word_pos_num
+                # Example: wordnet_hello_n_01, wordnet_world_n_01
+                parts = concept_id.split('_')
+                if len(parts) >= 2:
+                    concept_word = parts[1]
+                    if concept_word == word:
+                        return concept_id
+
+                    # Also try with underscores replaced (e.g., "hello_world" -> "hello world")
+                    if concept_word.replace('_', ' ') == word or word.replace('_', ' ') == concept_word:
+                        return concept_id
+
+        return None
 
     def generate_with_ai(self, prompt: str, max_length: int = 100) -> str:
         """

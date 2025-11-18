@@ -753,6 +753,7 @@ class GremlinAdminGUI:
 
         def apply_scale():
             new_scale = scale_var.get()
+            old_scale = self.ui_scale
             self.ui_scale = new_scale
 
             # Apply window scaling
@@ -763,22 +764,27 @@ class GremlinAdminGUI:
 
             self.root.geometry(f"{new_width}x{new_height}")
 
-            # Apply font scaling to major elements
-            try:
-                # Scale log fonts
-                for widget in [self.client_log, self.server_log, self.mitm_log]:
-                    current_font = widget.cget('font')
-                    if isinstance(current_font, tuple):
-                        widget.configure(font=(current_font[0], int(9 * new_scale)))
-                    else:
-                        widget.configure(font=('Courier', int(9 * new_scale)))
-            except:
-                pass  # If font scaling fails, just continue
+            # Apply tkinter global scaling
+            import tkinter.font as tkfont
+            default_font = tkfont.nametofont("TkDefaultFont")
+            text_font = tkfont.nametofont("TkTextFont")
+            fixed_font = tkfont.nametofont("TkFixedFont")
+
+            base_size = 9
+            new_size = max(6, int(base_size * new_scale))
+
+            default_font.configure(size=new_size)
+            text_font.configure(size=new_size)
+            fixed_font.configure(size=new_size)
+
+            # Force update all widgets
+            self.root.update_idletasks()
 
             messagebox.showinfo(
                 "Scale Applied",
                 f"UI scale set to {new_scale:.1f}x\n\n"
-                "Window resized to {new_width}x{new_height}"
+                f"Window: {new_width}x{new_height}\n"
+                f"Font size: {new_size}pt"
             )
             dialog.destroy()
 
