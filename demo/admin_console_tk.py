@@ -273,7 +273,7 @@ class GremlinAdminGUI:
 
         self.client_visual = tk.Label(
             self.client_frame,
-            text="  ┌──────┐\n  │ ◖◗   │\n  │ 🟩   │\n  └──────┘",
+            text="  ┌──────┐\n  │   ◖◗ │\n  │   🟩 │\n  └──────┘",
             font=('Courier', 12),
             bg=self.colors['panel'],
             fg=self.colors['client']
@@ -315,7 +315,7 @@ class GremlinAdminGUI:
 
         self.server_visual = tk.Label(
             self.server_frame,
-            text="  ┌──────┐\n  │   ◖◗ │\n  │   🟩 │\n  └──────┘",
+            text="  ┌──────┐\n  │ ◖◗   │\n  │ 🟩   │\n  └──────┘",
             font=('Courier', 12),
             bg=self.colors['panel'],
             fg=self.colors['server']
