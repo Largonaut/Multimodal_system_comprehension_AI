@@ -67,6 +67,9 @@ class LanguagePackGeneratorGUI:
         # Make window resizable
         self.root.resizable(True, True)
 
+        # Config file for persistence
+        self.config_file = Path.home() / '.gremlin_generator_config.json'
+
         # Generation state
         self.is_generating = False
         self.concept_dict = None
@@ -80,6 +83,9 @@ class LanguagePackGeneratorGUI:
 
         # Build UI
         self.create_widgets()
+
+        # Load saved config (after widgets are created)
+        self.load_config()
 
     def load_base_concepts(self):
         """Load the base concept dictionary."""
@@ -563,6 +569,34 @@ class LanguagePackGeneratorGUI:
         directory = filedialog.askdirectory(initialdir=self.output_dir.get())
         if directory:
             self.output_dir.set(directory)
+            self.save_config()  # Save after browsing
+
+    def load_config(self):
+        """Load saved configuration."""
+        try:
+            if self.config_file.exists():
+                import json
+                with open(self.config_file, 'r') as f:
+                    config = json.load(f)
+
+                # Restore output directory if it exists
+                if 'output_dir' in config and Path(config['output_dir']).exists():
+                    self.output_dir.set(config['output_dir'])
+                    print(f"Restored output directory: {config['output_dir']}")
+        except Exception as e:
+            print(f"Could not load config: {e}")
+
+    def save_config(self):
+        """Save current configuration."""
+        try:
+            import json
+            config = {
+                'output_dir': self.output_dir.get()
+            }
+            with open(self.config_file, 'w') as f:
+                json.dump(config, f, indent=2)
+        except Exception as e:
+            print(f"Could not save config: {e}")
 
     def log_status(self, message):
         """Log a status message."""
@@ -732,6 +766,9 @@ class LanguagePackGeneratorGUI:
             estimated_rounds = stats['total_words'] // words_per_exchange
             self.log_status(f"Estimated Auth Rounds: ~{estimated_rounds:,}")
             self.log_status("=" * 60)
+
+            # Save config to persist output directory
+            self.save_config()
 
             # Show success message
             self.root.after(0, lambda: messagebox.showinfo(
