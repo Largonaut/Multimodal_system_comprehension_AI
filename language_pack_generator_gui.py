@@ -744,10 +744,11 @@ class LanguagePackGeneratorGUI:
             ))
 
         except Exception as e:
-            self.log_status(f"❌ ERROR: {e}")
+            error_msg = str(e)
+            self.log_status(f"❌ ERROR: {error_msg}")
             import traceback
             self.log_status(traceback.format_exc())
-            self.root.after(0, lambda: messagebox.showerror("Error", f"Generation failed:\n{e}"))
+            self.root.after(0, lambda msg=error_msg: messagebox.showerror("Error", f"Generation failed:\n{msg}"))
 
         finally:
             # Re-enable UI
