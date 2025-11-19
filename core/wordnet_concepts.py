@@ -48,43 +48,74 @@ class WordNetConceptExtractor:
         self.all_synsets = list(self.wn.all_synsets())
         print(f"Loaded {len(self.all_synsets)} synsets from WordNet")
 
+        # Load word frequency data from Brown corpus
+        self.word_freq = {}
+        try:
+            from nltk.corpus import brown
+            from collections import Counter
+            print("Loading word frequency data from Brown corpus...")
+            words = [word.lower() for word in brown.words()]
+            freq_dist = Counter(words)
+            # Normalize to 0-1 scale
+            max_freq = max(freq_dist.values())
+            self.word_freq = {word: count / max_freq for word, count in freq_dist.items()}
+            print(f"Loaded frequency data for {len(self.word_freq):,} words")
+        except:
+            print("⚠️  Brown corpus not available, using heuristic scoring only")
+            print("   For better results: python -m nltk.downloader brown")
+
     def get_synset_frequency_score(self, synset) -> float:
         """
-        Calculate a frequency score for a synset.
+        Calculate a frequency score for a synset based on corpus frequency data.
 
-        Heuristics:
-        - Nouns and verbs are more common than adjectives/adverbs
-        - Higher depth = more specific (lower score)
-        - More lemmas = more common (higher score)
-        - Shorter name = more basic/common (higher score)
+        Uses actual word usage frequency from Brown corpus if available,
+        otherwise falls back to heuristics.
         """
-        score = 100.0
+        # Start with corpus-based frequency if available
+        max_lemma_freq = 0.0
+        lemmas = synset.lemmas()
 
-        # POS weighting (nouns and verbs most common)
+        if self.word_freq:
+            # Use actual corpus frequency - highest frequency lemma wins
+            for lemma in lemmas:
+                word = lemma.name().lower().replace('_', ' ')
+                # Check both underscore and space versions
+                freq = max(
+                    self.word_freq.get(word, 0.0),
+                    self.word_freq.get(word.replace(' ', '_'), 0.0)
+                )
+                max_lemma_freq = max(max_lemma_freq, freq)
+
+            # Scale up corpus frequency (it's 0-1) to be dominant
+            score = 1000.0 * max_lemma_freq
+        else:
+            # Fallback: use heuristics if no corpus data
+            score = 100.0
+
+        # Bonus factors (less important than corpus frequency)
+
+        # POS weighting (nouns and verbs slightly favored)
         pos_weights = {
-            'n': 1.0,   # Nouns
-            'v': 0.9,   # Verbs
-            'a': 0.5,   # Adjectives
-            's': 0.5,   # Adjective satellites
-            'r': 0.3    # Adverbs (least common)
+            'n': 1.2,   # Nouns
+            'v': 1.1,   # Verbs
+            'a': 1.0,   # Adjectives
+            's': 1.0,   # Adjective satellites
+            'r': 0.9    # Adverbs
         }
-        score *= pos_weights.get(synset.pos(), 0.1)
+        score *= pos_weights.get(synset.pos(), 0.5)
 
-        # Depth penalty (shallower = more general = more common)
+        # Depth bonus (shallower = more general, but less important than frequency)
         try:
             min_depth = synset.min_depth()
-            if min_depth:
-                score *= (1.0 / (1.0 + min_depth * 0.1))
+            if min_depth is not None:
+                # Shallow concepts get small bonus
+                score *= (1.0 + (5.0 / (1.0 + min_depth)))
         except:
             pass
 
-        # Lemma count bonus (more words = more common concept)
-        lemma_count = len(synset.lemmas())
-        score *= (1.0 + lemma_count * 0.2)
-
-        # Name length penalty (shorter = more basic)
-        name_parts = synset.name().split('.')[0]
-        score *= (1.0 / (1.0 + len(name_parts) * 0.01))
+        # Lemma count bonus (more lemmas = more ways to express concept)
+        lemma_count = len(lemmas)
+        score *= (1.0 + lemma_count * 0.1)
 
         return score
 
