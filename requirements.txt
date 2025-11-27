@@ -7,11 +7,25 @@ numpy>=1.24.0
 rich>=13.0.0
 textual>=1.0.0  # For admin console
 
-# AI/ML (optional - for Gemma integration)
-# Uncomment if using Gemma models:
-# torch>=2.0.0
-# transformers>=4.35.0
-# accelerate>=0.20.0
+# AI/ML (BRAIN PHASE - Hub-Free Dependencies Only)
+# PyTorch core (no hub features)
+torch>=2.0.0
+# SafeTensors for model weight loading (pure file I/O)
+safetensors>=0.4.0
+# Progress bars (local only)
+tqdm>=4.65.0
+# Scientific computing
+scipy>=1.11.0
+# Training visualization (self-hosted or local mode)
+wandb>=0.16.0
+# HTTP requests for direct downloads (no hub library)
+requests>=2.31.0
+
+# EXPLICITLY EXCLUDED (Hub Dependencies - Security Policy Violation):
+# ❌ transformers (Hugging Face - has hub code)
+# ❌ accelerate (Hugging Face - has hub code)
+# ❌ peft (Hugging Face - has hub code)
+# ❌ datasets (Hugging Face - has hub code)
 
 # Vector operations (optional - for advanced features)
 # faiss-cpu>=1.7.4
@@ -19,4 +33,3 @@ textual>=1.0.0  # For admin console
 # Future features (not required for demo)
 # pydantic>=2.0.0
 # cryptography>=41.0.0
-# tqdm>=4.65.0

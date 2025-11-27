@@ -1,69 +1,68 @@
-# GREMLIN
-**Generative Representation Encoding for Multi-Layer Identity Negotiation**
+# GREMLIN: Semantic Compression & Obfuscation Engine
+**Current State:** GOD MODE (v1.5)
 
-A synthetic language generator for secure, ephemeral AI-to-AI communication.
+GREMLIN is a **Semantic One-Time Pad** and **Hyper-Compression Engine**. It maps the entirety of the English language and human knowledge (Wikipedia) into a dense, 3-character Unicode vocabulary.
 
-## Overview
-
-GREMLIN generates completely novel languages on-demand, enabling AI models to communicate in synthetic languages that are:
-- **Ephemeral**: Languages are forgotten after use
-- **Unique**: Trillions of possible language combinations
-- **Secure**: One-time word usage prevents pattern analysis
-- **AI-native**: Models learn languages instantly from compact packs
-
-## Architecture
-
-### Core Components
-
-1. **Concept Dictionary**: Permanent semantic foundation (~350 core concepts)
-2. **Word Generator**: Creates random Unicode strings for each concept
-3. **Language Pack**: Bundles 5,000+ word variations per concept
-4. **Grammar Engine**: Applies linguistic rules from real-world languages
-5. **MRL Vector Store**: Tracks word usage with Matryoshka embeddings
-6. **Translator**: Gemma 2 9B models convert between English and synthetic
-
-### Security Model
-
-- Each concept has thousands of random Unicode representations
-- Words are marked as "used" after transmission (one-time pad)
-- DDoS/spam attempts routed to "use-last" pool
-- Language rotation when word pools deplete
-- No encryption needed - unintelligible without language pack
-
-## Demo: Authentication Protocol
-
-Two AI models authenticate 100 times using ephemeral synthetic language:
-
-**Client → Server**: "Checking in, this is [NAME] with [COMPANY] talking about [TOPIC]"
-**Server → Client**: "Information received, confirmed you are [NAME] with [COMPANY] talking about [TOPIC]"
-
-A third machine (MITM) intercepts traffic but sees only gibberish.
-
-## Tech Stack
-
-- **Embeddings**: EmbeddingGemma 300M (MRL vectors)
-- **Translation**: Gemma 2 9B (language learning)
-- **Language**: Python 3.10+
-- **Pack Format**: Encrypted JSON
-
-## Future Applications
-
-Beyond security, GREMLIN's arbitrary concept-to-utterance mapping enables:
-- Personal language evolution for aphasia patients
-- Dynamic translation of non-standard communication patterns
-- Adaptive interfaces for neurological conditions
-
-## Project Status
-
-**Current Phase**: Foundation building
-- [x] Project structure
-- [ ] Concept dictionary
-- [ ] Word generator
-- [ ] Language pack builder
-- [ ] Grammar engine
-- [ ] Vector store integration
-- [ ] Demo implementation
+It is designed as the foundational communication and memory layer for **Project Guy**.
 
 ---
 
-*"When gremlins jabber, only gremlins understand."*
+## 🚀 Current Capabilities
+
+### 1. Massive Semantic Dictionary ("God Mode")
+*   **Capacity:** 15 Million entries.
+*   **Coverage:** 
+    *   **Lexical:** Brown Corpus, NLTK Words, DWYL (~466k words).
+    *   **Semantic:** WordNet Concepts (~117k synsets).
+    *   **Entities:** English Wikipedia Titles (~7M+ entities).
+*   **The Trap Door:** A fallback character-encoding mechanism ensuring **100.0% coverage**. No word is ever left in plain text.
+
+### 2. Universal Training Corpus
+*   **Size:** ~2.3 GB JSONL file.
+*   **Content:** ~15 Million training pairs mapping English -> GREMLIN.
+*   **Sources:** Brown, Reuters, Gutenberg, Wikitext-103, and Dictionary Flashcards.
+*   **Purpose:** The "Rosetta Stone" used to train the Custom Tokenizer and AI Model.
+
+### 3. Tooling Suite
+*   **Ingestion Engine:** Automatically fetches and repairs raw datasets (FastAI Wikitext mirror).
+*   **Dictionary Viewer:** GUI to inspect the 15M-entry hash map.
+*   **Corpus Viewer:** GUI with Auto-Scroll, Efficiency Sorting, and Live Token Metrics.
+*   **Compression GUI:** Dashboard for testing compression rates on custom text.
+
+---
+
+## 🛠️ Usage Guide (Python 3.12)
+
+### 1. Data Pipeline (Rebuild from Scratch)
+```bash
+# 1. Download raw data (Wikidata, Word lists, Corpora)
+py -3.12 ingestion/fetch_data.py
+
+# 2. Generate the Dictionary & Training Corpus (The Heavy Lift)
+# WARNING: Requires ~8-16GB RAM. Takes ~5-10 minutes.
+py -3.12 training/corpus_generator.py
+2. Inspection Tools
+code
+Bash
+# View the Training Data & Metrics
+py -3.12 training/corpus_viewer.py
+
+# Inspect the Dictionary (requires building it first inside the tool)
+py -3.12 compression/dictionary_viewer.py
+
+# Test Compression on Custom Text
+py -3.12 compression/compression_gui.py
+3. The "Forge" (Next Step)
+code
+Bash
+# Train the Custom Tokenizer on the Corpus
+py -3.12 training/train_tokenizer.py
+📊 Performance Metrics
+Character Reduction: ~55% - 80% (depending on content density).
+Token Reduction: pending custom tokenizer training (Expected ~2x-4x multiplier).
+Security: 100% Obfuscation (Semantic OTP).
+📂 Project Structure
+compression/ - Core logic for Dictionary Building and Token Analysis.
+ingestion/ - Scripts to fetch raw internet data.
+training/ - Generators for the massive JSONL datasets and Tokenizer training.
+core/ - WordNet extraction logic.
